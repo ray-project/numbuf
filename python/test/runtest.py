@@ -59,6 +59,37 @@ class SerializationTests(unittest.TestCase):
     for obj in TEST_OBJECTS:
       self.roundTripTest([obj])
 
+  def testCallback(self):
+
+    class Foo(object):
+      def __init__(self):
+        self.x = 1
+
+    class Bar(object):
+      def __init__(self):
+        self.foo = Foo()
+
+    def serialize(obj):
+      return dict(obj.__dict__, **{"__ray_id__": type(obj).__name__})
+
+    def deserialize(obj):
+      if obj["__ray_id__"] == "Foo":
+        result = Foo()
+      elif obj["__ray_id__"] == "Bar":
+        result = Bar()
+
+      obj.pop("__ray_id__", None)
+      result.__dict__ = obj
+      return result
+
+    bar = Bar()
+    bar.foo.x = 42
+
+    libnumbuf.register_callbacks(serialize, deserialize)
+
+    metadata, size, serialized = libnumbuf.serialize_list([bar])
+    self.assertEqual(libnumbuf.deserialize_list(serialized)[0].foo.x, 42)
+
   def testBuffer(self):
     for (i, obj) in enumerate(TEST_OBJECTS):
       schema, size, batch = libnumbuf.serialize_list([obj])
