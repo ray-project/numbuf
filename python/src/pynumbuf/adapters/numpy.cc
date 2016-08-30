@@ -6,6 +6,9 @@
 
 using namespace arrow;
 
+extern PyObject *ray_serialize_callback;
+extern PyObject *ray_deserialize_callback;
+
 namespace numbuf {
 
 #define ARROW_TYPE_TO_NUMPY_CASE(TYPE) \
@@ -52,7 +55,8 @@ Status DeserializeArray(std::shared_ptr<Array> array, int32_t offset, PyObject**
   return Status::OK();
 }
 
-Status SerializeArray(PyArrayObject* array, SequenceBuilder& builder) {
+Status SerializeArray(PyArrayObject* array, SequenceBuilder& builder,
+    std::vector<PyObject*>& subdicts) {
   size_t ndim = PyArray_NDIM(array);
   int dtype = PyArray_TYPE(array);
   std::vector<int64_t> dims(ndim);
@@ -95,6 +99,29 @@ Status SerializeArray(PyArrayObject* array, SequenceBuilder& builder) {
       break;
     case NPY_DOUBLE:
       RETURN_NOT_OK(builder.AppendTensor(dims, reinterpret_cast<double*>(data)));
+      break;
+    case NPY_OBJECT:
+      std::cout << "object detected" << std::endl;
+      if (!ray_serialize_callback) {
+        std::stringstream stream;
+        stream << "numpy data type not recognized: " << dtype;
+        return Status::NotImplemented(stream.str());
+      } else {
+        std::cout << "A" << std::endl;
+        PyObject* arglist = Py_BuildValue("(O)", array);
+        std::cout << "B" << std::endl;
+        PyObject* result = PyObject_CallObject(ray_serialize_callback, arglist);
+        std::cout << "C" << std::endl;
+        if (!result) {
+          assert(false); // TODO(pcm): put in python_error_to_status
+        }
+        std::cout << "D" << std::endl;
+        builder.AppendDict(PyDict_Size(result));
+        std::cout << "E" << std::endl;
+        subdicts.push_back(result);
+        std::cout << "F" << std::endl;
+        Py_XDECREF(arglist);
+      }
       break;
     default:
       std::stringstream stream;
