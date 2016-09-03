@@ -30,10 +30,10 @@ fi
 if [[ $platform == "linux" ]]; then
   # These commands must be kept in sync with the installation instructions.
   sudo apt-get update
-  sudo apt-get install -y cmake build-essential autoconf libtool python-dev python-numpy python-pip
+  sudo apt-get install -y cmake build-essential autoconf libtool python-dev python-numpy python-pip libboost-all-dev
 elif [[ $platform == "macosx" ]]; then
   # These commands must be kept in sync with the installation instructions.
-  brew install cmake automake autoconf libtool
+  brew install cmake automake autoconf libtool boost
   sudo easy_install pip
   sudo pip install numpy --ignore-installed six
 fi
