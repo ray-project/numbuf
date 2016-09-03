@@ -78,3 +78,5 @@ if(APPLE)
 endif(APPLE)
 
 target_link_libraries(numbuf ${ARROW_STATIC_LIB} ${PYTHON_LIBRARIES})
+
+install(TARGETS numbuf DESTINATION ${CMAKE_SOURCE_DIR})
