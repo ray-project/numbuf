@@ -18,6 +18,7 @@ matrix:
       python: "3.5"
 
 install:
+  - ./install-dependencies.sh
   - ./build.sh
   - python setup.py develop --user
 
