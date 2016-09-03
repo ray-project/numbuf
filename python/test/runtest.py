@@ -3,8 +3,8 @@ import libnumbuf
 import numpy as np
 from numpy.testing import assert_equal
 
-TEST_OBJECTS = [{(1,2) : 1}, {() : 2}, [1, "hello", 3.0], 42, 43L, "hello world", 
-                u"x", u"\u262F", 42.0, 
+TEST_OBJECTS = [{(1,2) : 1}, {() : 2}, [1, "hello", 3.0], 42, 43L, "hello world",
+                u"x", u"\u262F", 42.0,
                 1L << 62, (1.0, "hi"),
                 None, (None, None), ("hello", None),
                 True, False, (True, False), "hello",
@@ -111,4 +111,4 @@ class SerializationTests(unittest.TestCase):
       assert_equal(result[0], obj)
 
 if __name__ == "__main__":
-    unittest.main()
+    unittest.main(verbosity=2)
