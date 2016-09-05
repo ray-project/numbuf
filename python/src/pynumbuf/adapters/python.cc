@@ -113,14 +113,15 @@ Status append(PyObject* elem, SequenceBuilder& builder,
       return Status::NotImplemented(ss.str());
     } else {
       PyObject* arglist = Py_BuildValue("(O)", elem);
+      // The reference count of the result of the call to PyObject_CallObject
+      // must be decremented. This is done in SerializeDict in this file.
       PyObject* result = PyObject_CallObject(numbuf_serialize_callback, arglist);
+      Py_XDECREF(arglist);
       if (!result) {
-        Py_XDECREF(arglist);
         return Status::NotImplemented("python error"); // TODO(pcm): https://github.com/pcmoritz/numbuf/issues/10
       }
       builder.AppendDict(PyDict_Size(result));
       subdicts.push_back(result);
-      Py_XDECREF(arglist);
     }
   }
   return Status::OK();
@@ -202,6 +203,7 @@ Status SerializeDict(std::vector<PyObject*> dicts, std::shared_ptr<Array>* out) 
       RETURN_NOT_OK(append(value, result.vals(), val_lists, val_tuples, val_dicts));
     }
   }
+
   std::shared_ptr<Array> key_tuples_arr;
   if (key_tuples.size() > 0) {
     RETURN_NOT_OK(SerializeSequences(key_tuples, &key_tuples_arr));
@@ -219,6 +221,18 @@ Status SerializeDict(std::vector<PyObject*> dicts, std::shared_ptr<Array>* out) 
     RETURN_NOT_OK(SerializeDict(val_dicts, &val_dict_arr));
   }
   *out = result.Finish(key_tuples_arr, val_list_arr, val_tuples_arr, val_dict_arr);
+
+  // This block is used to decrement the reference counts of the results
+  // returned by the serialization callback, which is called in SerializeArray
+  // in numpy.cc as well as in DeserializeDict and in append in this file.
+  static PyObject* py_type = PyString_FromString("_pytype_");
+  for (const auto& dict : dicts) {
+    if (PyDict_Contains(dict, py_type) && numbuf_serialize_callback) {
+      // assert numbuf_serialize_callback instead of putting it in the if
+      Py_XDECREF(dict);
+    }
+  }
+
   return Status::OK();
 }
 
@@ -237,12 +251,15 @@ Status DeserializeDict(std::shared_ptr<Array> array, int32_t start_idx, int32_t 
   static PyObject* py_type = PyString_FromString("_pytype_");
   if (PyDict_Contains(result, py_type) && numbuf_deserialize_callback) {
     PyObject* arglist = Py_BuildValue("(O)", result);
-    result = PyObject_CallObject(numbuf_deserialize_callback, arglist);
-    if (!result) {
-      Py_XDECREF(arglist);
+    // The result of the call to PyObject_CallObject will be passed to Python
+    // and its reference count will be decremented by the interpreter.
+    PyObject* callback_result = PyObject_CallObject(numbuf_deserialize_callback, arglist);
+    Py_XDECREF(arglist);
+    Py_XDECREF(result);
+    result = callback_result;
+    if (!callback_result) {
       return Status::NotImplemented("python error"); // TODO(pcm): https://github.com/pcmoritz/numbuf/issues/10
     }
-    Py_XDECREF(arglist);
   }
   *out = result;
   return Status::OK();
