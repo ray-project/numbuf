@@ -203,7 +203,6 @@ Status SerializeDict(std::vector<PyObject*> dicts, std::shared_ptr<Array>* out) 
       RETURN_NOT_OK(append(value, result.vals(), val_lists, val_tuples, val_dicts));
     }
   }
-
   std::shared_ptr<Array> key_tuples_arr;
   if (key_tuples.size() > 0) {
     RETURN_NOT_OK(SerializeSequences(key_tuples, &key_tuples_arr));
@@ -227,8 +226,10 @@ Status SerializeDict(std::vector<PyObject*> dicts, std::shared_ptr<Array>* out) 
   // in numpy.cc as well as in DeserializeDict and in append in this file.
   static PyObject* py_type = PyString_FromString("_pytype_");
   for (const auto& dict : dicts) {
-    if (PyDict_Contains(dict, py_type) && numbuf_serialize_callback) {
-      // assert numbuf_serialize_callback instead of putting it in the if
+    if (PyDict_Contains(dict, py_type)) {
+      // If the dictionary contains the key "_pytype_", then the user has to
+      // have registered a callback.
+      ARROW_CHECK(numbuf_serialize_callback);
       Py_XDECREF(dict);
     }
   }
