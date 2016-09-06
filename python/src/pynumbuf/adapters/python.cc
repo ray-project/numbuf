@@ -96,7 +96,7 @@ Status append(PyObject* elem, SequenceBuilder& builder,
   } else if (PyDict_Check(elem)) {
     builder.AppendDict(PyDict_Size(elem));
     subdicts.push_back(elem);
-  } else if (PyTuple_Check(elem)) {
+  } else if (PyTuple_CheckExact(elem)) {
     builder.AppendTuple(PyTuple_Size(elem));
     subtuples.push_back(elem);
   } else if (PyArray_IsScalar(elem, Generic)) {
