@@ -193,19 +193,27 @@ Status DeserializeTuple(std::shared_ptr<Array> array, int32_t start_idx, int32_t
 
 Status SerializeDict(std::vector<PyObject*> dicts, std::shared_ptr<Array>* out) {
   DictBuilder result;
-  std::vector<PyObject*> key_tuples, val_lists, val_tuples, val_dicts, dummy;
+  std::vector<PyObject*> key_lists, key_tuples, key_dicts, val_lists, val_tuples, val_dicts, dummy;
   for (const auto& dict : dicts) {
     PyObject *key, *value;
     Py_ssize_t pos = 0;
     while (PyDict_Next(dict, &pos, &key, &value)) {
-      RETURN_NOT_OK(append(key, result.keys(), dummy, key_tuples, dummy));
+      RETURN_NOT_OK(append(key, result.keys(), key_lists, key_tuples, key_dicts));
       DCHECK(dummy.size() == 0);
       RETURN_NOT_OK(append(value, result.vals(), val_lists, val_tuples, val_dicts));
     }
   }
+  std::shared_ptr<Array> key_list_arr;
+  if (key_lists.size() > 0) {
+    RETURN_NOT_OK(SerializeSequences(key_lists, &key_list_arr));
+  }
   std::shared_ptr<Array> key_tuples_arr;
   if (key_tuples.size() > 0) {
     RETURN_NOT_OK(SerializeSequences(key_tuples, &key_tuples_arr));
+  }
+  std::shared_ptr<Array> key_dict_arr;
+  if (key_dicts.size() > 0) {
+    RETURN_NOT_OK(SerializeDict(key_dicts, &key_dict_arr));
   }
   std::shared_ptr<Array> val_list_arr;
   if (val_lists.size() > 0) {
@@ -219,7 +227,7 @@ Status SerializeDict(std::vector<PyObject*> dicts, std::shared_ptr<Array>* out) 
   if (val_dicts.size() > 0) {
     RETURN_NOT_OK(SerializeDict(val_dicts, &val_dict_arr));
   }
-  *out = result.Finish(key_tuples_arr, val_list_arr, val_tuples_arr, val_dict_arr);
+  *out = result.Finish(key_list_arr, key_tuples_arr, key_dict_arr, val_list_arr, val_tuples_arr, val_dict_arr);
 
   // This block is used to decrement the reference counts of the results
   // returned by the serialization callback, which is called in SerializeArray
