@@ -127,7 +127,7 @@ Status append(PyObject* elem, SequenceBuilder& builder,
   return Status::OK();
 }
 
-Status SerializeSequences(std::vector<PyObject*> sequences, std::shared_ptr<Array>* out) {
+Status SerializeSequences(std::vector<PyObject*> sequences, std::vector<PyObject*> nested_objects, std::shared_ptr<Array>* out) {
   DCHECK(out);
   SequenceBuilder builder(nullptr);
   std::vector<PyObject*> sublists, subtuples, subdicts;
@@ -135,6 +135,14 @@ Status SerializeSequences(std::vector<PyObject*> sequences, std::shared_ptr<Arra
     PyObject* item;
     PyObject* iterator = PyObject_GetIter(sequence);
     while ((item = PyIter_Next(iterator))) {
+
+      if (std::find(nested_objects.begin(), nested_objects.end(), item) != nested_objects.end()) {
+        // This object may recursively contain itself, so attempting to serialize
+        // it could cause an infinite loop.
+        Py_DECREF(iterator);
+        return Status::NotImplemented("This object may recursively contain itself, so serialization may cause an infinite loop.");;
+      }
+
       Status s = append(item, builder, sublists, subtuples, subdicts);
       Py_DECREF(item);
       // if an error occurs, we need to decrement the reference counts before returning
@@ -145,17 +153,22 @@ Status SerializeSequences(std::vector<PyObject*> sequences, std::shared_ptr<Arra
     }
     Py_DECREF(iterator);
   }
+
+  for (int i = 0; i < sequences.size(); ++i) {
+    nested_objects.push_back(sequences[i]);
+  }
+
   std::shared_ptr<Array> list;
   if (sublists.size() > 0) {
-    RETURN_NOT_OK(SerializeSequences(sublists, &list));
+    RETURN_NOT_OK(SerializeSequences(sublists, nested_objects, &list));
   }
   std::shared_ptr<Array> tuple;
   if (subtuples.size() > 0) {
-    RETURN_NOT_OK(SerializeSequences(subtuples, &tuple));
+    RETURN_NOT_OK(SerializeSequences(subtuples, nested_objects, &tuple));
   }
   std::shared_ptr<Array> dict;
   if (subdicts.size() > 0) {
-    RETURN_NOT_OK(SerializeDict(subdicts, &dict));
+    RETURN_NOT_OK(SerializeDict(subdicts, nested_objects, &dict));
   }
   *out = builder.Finish(list, tuple, dict);
   return Status::OK();
@@ -191,33 +204,58 @@ Status DeserializeTuple(std::shared_ptr<Array> array, int32_t start_idx, int32_t
   DESERIALIZE_SEQUENCE(PyTuple_New, PyTuple_SetItem)
 }
 
-Status SerializeDict(std::vector<PyObject*> dicts, std::shared_ptr<Array>* out) {
+Status SerializeDict(std::vector<PyObject*> dicts, std::vector<PyObject*> nested_objects, std::shared_ptr<Array>* out) {
   DictBuilder result;
   std::vector<PyObject*> key_tuples, val_lists, val_tuples, val_dicts, dummy;
   for (const auto& dict : dicts) {
     PyObject *key, *value;
     Py_ssize_t pos = 0;
     while (PyDict_Next(dict, &pos, &key, &value)) {
+
+      if(std::find(nested_objects.begin(), nested_objects.end(), key) != nested_objects.end()) {
+        // This object may recursively contain itself, so attempting to serialize
+        // it could cause an infiite loop.
+        return Status::NotImplemented("This object may recursively contain itself, so serialization may cause an infinite loop.");;
+      }
+      if(std::find(nested_objects.begin(), nested_objects.end(), value) != nested_objects.end()) {
+        // This object may recursively contain itself, so attempting to serialize
+        // it could cause an infiite loop.
+        return Status::NotImplemented("This object may recursively contain itself, so serialization may cause an infinite loop.");;
+      }
+
       RETURN_NOT_OK(append(key, result.keys(), dummy, key_tuples, dummy));
       DCHECK(dummy.size() == 0);
       RETURN_NOT_OK(append(value, result.vals(), val_lists, val_tuples, val_dicts));
     }
   }
+
+  for (const auto& dict : dicts) {
+    PyObject *key, *value;
+    Py_ssize_t pos = 0;
+    while (PyDict_Next(dict, &pos, &key, &value)) {
+
+      nested_objects.push_back(key);
+      nested_objects.push_back(value);
+
+    }
+  }
+
+
   std::shared_ptr<Array> key_tuples_arr;
   if (key_tuples.size() > 0) {
-    RETURN_NOT_OK(SerializeSequences(key_tuples, &key_tuples_arr));
+    RETURN_NOT_OK(SerializeSequences(key_tuples, nested_objects, &key_tuples_arr));
   }
   std::shared_ptr<Array> val_list_arr;
   if (val_lists.size() > 0) {
-    RETURN_NOT_OK(SerializeSequences(val_lists, &val_list_arr));
+    RETURN_NOT_OK(SerializeSequences(val_lists, nested_objects, &val_list_arr));
   }
   std::shared_ptr<Array> val_tuples_arr;
   if (val_tuples.size() > 0) {
-    RETURN_NOT_OK(SerializeSequences(val_tuples, &val_tuples_arr));
+    RETURN_NOT_OK(SerializeSequences(val_tuples, nested_objects, &val_tuples_arr));
   }
   std::shared_ptr<Array> val_dict_arr;
   if (val_dicts.size() > 0) {
-    RETURN_NOT_OK(SerializeDict(val_dicts, &val_dict_arr));
+    RETURN_NOT_OK(SerializeDict(val_dicts, nested_objects, &val_dict_arr));
   }
   *out = result.Finish(key_tuples_arr, val_list_arr, val_tuples_arr, val_dict_arr);
 

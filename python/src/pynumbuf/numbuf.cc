@@ -51,7 +51,8 @@ static PyObject* serialize_list(PyObject* self, PyObject* args) {
   }
   std::shared_ptr<Array> array;
   if (PyList_Check(value)) {
-    Status s = SerializeSequences(std::vector<PyObject*>({value}), &array);
+    std::vector<PyObject*> nested_objects;
+    Status s = SerializeSequences(std::vector<PyObject*>({value}), nested_objects, &array);
     if (!s.ok()) {
       // If this condition is true, there was an error in the callback that
       // needs to be passed through
