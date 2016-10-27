@@ -19,8 +19,6 @@ matrix:
 
 install:
   - ./install-dependencies.sh
-  - ./setup.sh
-  - ./build.sh
   - python setup.py develop --user
 
 script:
