@@ -9,8 +9,8 @@ class install(_install.install):
     subprocess.check_call(["./setup.sh"])
     subprocess.check_call(["./build.sh"])
     subprocess.check_call(["cp", "libnumbuf.so", "numbuf/"])
-    # calling _install.install.run(self) does not fetch  required packages
-    # and instead performs an old-style install. see command/install.py in
+    # Calling _install.install.run(self) does not fetch required packages and
+    # instead performs an old-style install. See command/install.py in
     # setuptools. So, calling do_egg_install() manually here.
     self.do_egg_install()
 
