@@ -18,6 +18,6 @@ setup(name="numbuf",
       version="0.0.1",
       packages=find_packages(),
       package_data={"numbuf": ["libnumbuf.so"]},
-      cmdclass={'install': install},
+      cmdclass={"install": install},
       include_package_data=True,
       zip_safe=False)
