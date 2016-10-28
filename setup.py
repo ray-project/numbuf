@@ -1,19 +1,19 @@
 import subprocess
 from setuptools import setup, find_packages, Extension
 
-from setuptools.command.build_ext import build_ext as _build_ext
+from setuptools.command.install import install as _install
 
 # Because of relative paths, this must be run from inside numbuf/.
 
-class build_ext(_build_ext):
+class install(_install):
   def run(self):
     subprocess.check_call(["./setup.sh"])
     subprocess.check_call(["./build.sh"])
-    _build_ext.run(self)
+    _install.run(self)
 
 setup(name="numbuf",
       version="0.0.1",
       packages=find_packages(),
       package_data={"numbuf": ["libnumbuf.so"]},
-      cmdclass={"build_ext": build_ext},
+      cmdclass={"install": install},
       zip_safe=False)
