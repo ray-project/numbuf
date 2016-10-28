@@ -19,7 +19,7 @@ matrix:
 
 install:
   - ./install-dependencies.sh
-  - python setup.py develop --user
+  - python setup.py install --user
 
 script:
   - python python/test/runtest.py
