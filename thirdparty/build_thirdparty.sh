@@ -20,7 +20,7 @@ fi
 
 echo "building arrow"
 cd $TP_DIR/arrow/cpp
-source setup_build_env.sh
+# source setup_build_env.sh
 mkdir -p $TP_DIR/arrow/cpp/build
 cd $TP_DIR/arrow/cpp/build
 cmake -DLIBARROW_LINKAGE=STATIC -DCMAKE_BUILD_TYPE=Release ..
