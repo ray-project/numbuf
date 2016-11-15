@@ -7,7 +7,7 @@ namespace numbuf {
 template<typename T>
 TensorBuilder<T>::TensorBuilder(const TypePtr& dtype, MemoryPool* pool)
     : dtype_(dtype) {
-  dim_data_ = std::make_shared<Int64Builder>(pool);
+  dim_data_ = std::make_shared<Int64Builder>(pool, std::make_shared<Int64Type>());
   dims_ = std::make_shared<ListBuilder>(pool, dim_data_);
   value_data_ = std::make_shared<PrimitiveBuilder<T>>(pool, dtype);
   values_ = std::make_shared<ListBuilder>(pool, value_data_);
@@ -32,8 +32,8 @@ Status TensorBuilder<T>::Append(const std::vector<int64_t>& dims, const elem_typ
 }
 
 template<typename T>
-std::shared_ptr<Array> TensorBuilder<T>::Finish() {
-  return tensors_->Finish();
+Status TensorBuilder<T>::Finish(std::shared_ptr<Array>* out) {
+  return tensors_->Finish(out);
 }
 
 template class TensorBuilder<UInt8Type>;

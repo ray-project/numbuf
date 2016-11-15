@@ -31,7 +31,7 @@ public:
   arrow::Status Append(const std::vector<int64_t>& dims, const elem_type* data);
 
   //! Convert the tensors to an Arrow StructArray
-  std::shared_ptr<arrow::Array> Finish();
+  arrow::Status Finish(std::shared_ptr<arrow::Array>* out);
 
   //! Number of tensors in the column
   int32_t length() {
