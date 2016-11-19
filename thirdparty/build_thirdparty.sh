@@ -20,7 +20,6 @@ fi
 
 echo "building arrow"
 cd $TP_DIR/arrow/cpp
-# source setup_build_env.sh
 mkdir -p $TP_DIR/arrow/cpp/build
 cd $TP_DIR/arrow/cpp/build
 cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_FLAGS="-g" -DCMAKE_CXX_FLAGS="-g" ..
