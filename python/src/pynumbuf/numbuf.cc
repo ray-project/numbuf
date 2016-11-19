@@ -1,6 +1,5 @@
 #include <Python.h>
 #include <arrow/api.h>
-#include <arrow/ipc/memory.h>
 #include <arrow/ipc/adapter.h>
 #define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
 #define PY_ARRAY_UNIQUE_SYMBOL NUMBUF_ARRAY_API
