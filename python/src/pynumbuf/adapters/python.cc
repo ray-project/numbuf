@@ -170,7 +170,7 @@ Status SerializeSequences(std::vector<PyObject*> sequences, int32_t recursion_de
 }
 
 #define DESERIALIZE_SEQUENCE(CREATE, SET_ITEM)                                \
-  auto data = std::dynamic_pointer_cast<DenseUnionArray>(array);              \
+  auto data = std::dynamic_pointer_cast<UnionArray>(array);                   \
   int32_t size = array->length();                                             \
   PyObject* result = CREATE(stop_idx - start_idx);                            \
   auto types = std::make_shared<Int8Array>(size, data->types());              \

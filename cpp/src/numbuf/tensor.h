@@ -18,6 +18,8 @@ public:
   typedef typename T::c_type elem_type;
 
   TensorBuilder(const arrow::TypePtr& dtype, arrow::MemoryPool* pool = nullptr);
+  
+  arrow::Status Start();
 
   /*! Append a new tensor.
 
@@ -44,6 +46,7 @@ public:
 
 private:
 	arrow::TypePtr dtype_;
+  arrow::MemoryPool* pool_;
   std::shared_ptr<arrow::Int64Builder> dim_data_;
   std::shared_ptr<arrow::ListBuilder> dims_;
   std::shared_ptr<arrow::PrimitiveBuilder<T>> value_data_;

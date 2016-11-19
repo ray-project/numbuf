@@ -16,7 +16,7 @@ class install(_install.install):
 setup(name="numbuf",
       version="0.0.1",
       packages=find_packages(),
-      package_data={"numbuf": ["libnumbuf.so", "libarrow.so", "libarrow_io.so", "libarrow_ipc.so"]},
+      package_data={"numbuf": ["libplasmabuf.so", "libnumbuf.so", "libarrow.so", "libarrow_io.so", "libarrow_ipc.so"]},
       cmdclass={"install": install},
       setup_requires=["numpy"],
       include_package_data=True,
