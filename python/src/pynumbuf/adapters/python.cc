@@ -166,8 +166,7 @@ Status SerializeSequences(std::vector<PyObject*> sequences, int32_t recursion_de
   if (subdicts.size() > 0) {
     RETURN_NOT_OK(SerializeDict(subdicts, recursion_depth + 1, &dict));
   }
-  *out = builder.Finish(list, tuple, dict);
-  return Status::OK();
+  return builder.Finish(list, tuple, dict, out);
 }
 
 #define DESERIALIZE_SEQUENCE(CREATE, SET_ITEM)                                \
@@ -231,7 +230,7 @@ Status SerializeDict(std::vector<PyObject*> dicts, int32_t recursion_depth, std:
   if (val_dicts.size() > 0) {
     RETURN_NOT_OK(SerializeDict(val_dicts, recursion_depth + 1, &val_dict_arr));
   }
-  *out = result.Finish(key_tuples_arr, val_list_arr, val_tuples_arr, val_dict_arr);
+  result.Finish(key_tuples_arr, val_list_arr, val_tuples_arr, val_dict_arr, out);
 
   // This block is used to decrement the reference counts of the results
   // returned by the serialization callback, which is called in SerializeArray

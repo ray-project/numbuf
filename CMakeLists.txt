@@ -4,6 +4,9 @@ project(numbuf)
 
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/Modules)
 
+# Make libnumbuf.so look for shared libraries in the folder libnumbuf.so is in
+SET(CMAKE_INSTALL_RPATH "$ORIGIN/")
+
 if(NOT APPLE)
   find_package(PythonInterp REQUIRED)
   find_package(PythonLibs REQUIRED)
@@ -53,8 +56,14 @@ endif()
 set(ARROW_DIR "${CMAKE_SOURCE_DIR}/thirdparty/arrow/" CACHE STRING
   "Path of the arrow source directory")
 
-set(ARROW_STATIC_LIB "${CMAKE_SOURCE_DIR}/thirdparty/arrow/cpp/build/release/libarrow.a" CACHE STRING
-  "Path to libarrow.a (needs to be changed if arrow is build in debug mode)")
+set(ARROW_LIB "${CMAKE_SOURCE_DIR}/thirdparty/arrow/cpp/build/release/libarrow.so" CACHE STRING
+  "Path to libarrow.so (needs to be changed if arrow is build in debug mode)")
+
+set(ARROW_IO_LIB "${CMAKE_SOURCE_DIR}/thirdparty/arrow/cpp/build/release/libarrow_io.so" CACHE STRING
+  "Path to libarrow_io.so (needs to be changed if arrow is build in debug mode)")
+
+set(ARROW_IPC_LIB "${CMAKE_SOURCE_DIR}/thirdparty/arrow/cpp/build/release/libarrow_ipc.so" CACHE STRING
+  "Path to libarrow_ipc.so (needs to be changed if arrow is build in debug mode)")
 
 include_directories("${ARROW_DIR}/cpp/src/")
 include_directories("cpp/src/")
@@ -77,6 +86,7 @@ if(APPLE)
       ${CMAKE_INSTALL_NAME_TOOL} -change ${PYTHON_SHARED_LIBRARY} ${PYTHON_LIBRARIES} libnumbuf.so)
 endif(APPLE)
 
-target_link_libraries(numbuf ${ARROW_STATIC_LIB} ${PYTHON_LIBRARIES})
+target_link_libraries(numbuf ${ARROW_LIB} ${ARROW_IO_LIB} ${ARROW_IPC_LIB} ${PYTHON_LIBRARIES})
 
-install(TARGETS numbuf DESTINATION ${CMAKE_SOURCE_DIR})
+install(TARGETS numbuf DESTINATION ${CMAKE_SOURCE_DIR}/numbuf/)
+install(FILES ${ARROW_LIB} ${ARROW_IO_LIB} ${ARROW_IPC_LIB} DESTINATION ${CMAKE_SOURCE_DIR}/numbuf/)
